@@ -5,6 +5,7 @@ const pool = require("./config/database");
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const quizRoutes = require("./routes/quizRoutes");
+const leaderboardRoutes = require("./routes/leaderboardRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/quiz", quizRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 // Home route
 app.get("/", (req, res) => {
