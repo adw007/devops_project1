@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../config/database");
+const authenticateToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get("/questions", async (req, res) => {
 });
 
 // Submit quiz answers
-router.post("/submit", async (req, res) => {
+router.post("/submit", authenticateToken, async (req, res) => {
     try {
         const { answers } = req.body;
 
@@ -56,6 +57,14 @@ router.post("/submit", async (req, res) => {
                 score++;
             }
         }
+
+        // Save score for the logged-in user
+        await pool.query(
+            `UPDATE users
+             SET score = $1
+             WHERE id = $2`,
+            [score, req.user.userId]
+        );
 
         res.json({
             message: "Quiz submitted successfully",
