@@ -1,49 +1,6 @@
 import { useEffect, useState } from "react";
 const API_URL = import.meta.env.VITE_API_URL;
 
-const mockQuestions = [
-    {
-      id: 1,
-      question_text:
-        "Which command is used to create a new Git repository?",
-      option_a: "git init",
-      option_b: "git start",
-      option_c: "git create",
-      option_d: "git new",
-      correct_answer: "A",
-      category: "Git",
-    },
-    {
-      id: 2,
-      question_text:
-        "Which tool is commonly used as a reverse proxy and web server?",
-      option_a: "Nginx",
-      option_b: "PostgreSQL",
-      option_c: "Redis",
-      option_d: "Git",
-      correct_answer: "A",
-      category: "Web Server",
-    },
-    {
-      id: 3,
-      question_text:
-        "Which technology is used to package an application with its dependencies?",
-      option_a: "Docker",
-      option_b: "Jira",
-      option_c: "Power BI",
-      option_d: "PostgreSQL",
-      correct_answer: "A",
-      category: "Docker",
-    },
-  ];
-
-  const mockLeaderboard = [
-    { username: "Alex", score: 10 },
-    { username: "Rahul", score: 8 },
-    { username: "Adwaith", score: 7 },
-    { username: "John", score: 6 },
-    { username: "David", score: 5 },
-  ];
 
 function App() {
   const [page, setPage] = useState("home");
@@ -66,6 +23,7 @@ function App() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [score, setScore] = useState(0);
+  const [leaderboard, setLeaderboard] = useState([]);
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -92,10 +50,59 @@ function App() {
    */
 
   useEffect(() => {
-    if (page === "quiz") {
-      setQuestions(mockQuestions);
-    }
-  }, [page]);
+      if (page === "quiz") {
+        const loadQuestions = async () => {
+          try {
+            const response = await fetch(
+              `${API_URL}/api/quiz/questions`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              alert(data.message || "Failed to load questions");
+              return;
+            }
+
+            setQuestions(data.questions);
+            setCurrentQuestion(0);
+            setSelectedAnswer(null);
+            setAnswers([]);
+          } catch (error) {
+            console.error(error);
+            alert("Unable to load quiz questions");
+          }
+        };
+
+        loadQuestions();
+      }
+    }, [page]);
+
+    useEffect(() => {
+      if (page === "leaderboard") {
+        const loadLeaderboard = async () => {
+          try {
+            const response = await fetch(
+              `${API_URL}/api/leaderboard`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              alert(data.message || "Failed to load leaderboard");
+              return;
+            }
+
+            setLeaderboard(data.leaderboard);
+          } catch (error) {
+            console.error(error);
+            alert("Unable to load leaderboard");
+          }
+        };
+
+    loadLeaderboard();
+  }
+}, [page]);
 
   /*
    * Login
@@ -556,6 +563,56 @@ function App() {
     </div>
   );
 }
+const handleNextQuestion = async () => {
+  const updatedAnswers = [
+    ...answers,
+    {
+      question_id: questions[currentQuestion].id,
+      selected_answer: selectedAnswer,
+    },
+  ];
+
+  if (currentQuestion < questions.length - 1) {
+    setAnswers(updatedAnswers);
+    setCurrentQuestion(currentQuestion + 1);
+    setSelectedAnswer(null);
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      `${API_URL}/api/quiz/submit`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          answers: updatedAnswers,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Failed to submit quiz");
+      return;
+    }
+
+    setAnswers(updatedAnswers);
+    setScore(data.score);
+    setSelectedAnswer(null);
+    setCurrentQuestion(0);
+    setPage("result");
+  } catch (error) {
+    console.error(error);
+    alert("Unable to submit quiz");
+  }
+};
   /*
    * QUIZ PAGE
    */
@@ -831,7 +888,7 @@ function App() {
               <span>SCORE</span>
             </div>
 
-            {mockLeaderboard.map((player, index) => (
+            {leaderboard.map((player, index) => (
               <div
                 className={
                   `leaderboard-row ${

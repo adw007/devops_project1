@@ -685,7 +685,7 @@ h1 span {
   color: #ffffff;
 }
 
-@media (max-width: 700pxs) {
+@media (max-width: 700px) {
   .title-letter:hover {
     transform: translateY(-4px) scale(1.04);
   }
